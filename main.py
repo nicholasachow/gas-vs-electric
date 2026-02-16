@@ -16,6 +16,14 @@ STATIONS = {
 
 FUEL_TYPE = "regular_gas"
 
+# Charging locations: name → ($/kWh, home?)  (None rate = unknown, go find out!)
+HOME_CHARGER = "Downtown Mountain View"
+CHARGERS = {
+    "Downtown Palo Alto":           0.24,
+    "Downtown Mountain View": 0.25,
+    "Burlingame Highland Garage":    0.43,
+}
+
 
 def fetch_price(station_id: int) -> dict | None:
     """Scrape live gas prices from a GasBuddy station page."""
@@ -61,21 +69,35 @@ def fetch_price(station_id: int) -> dict | None:
     return None
 
 
-def print_breakeven(gas_price: float, mpg: float, empg: float):
+def print_results(gas_price: float, mpg: float, empg: float):
     cost_per_mile_gas = gas_price / mpg
     cutoff = gas_price * empg / mpg
 
     print(f"\n  Break-even electricity price: ${cutoff:.3f}/kWh")
     print(f"  Charge if your rate is below ${cutoff:.3f}/kWh\n")
 
-    print(f"  {'Elec Rate':>12}  {'$/mi (elec)':>12}  {'$/mi (gas)':>11}  Verdict")
-    print(f"  {'-'*12}  {'-'*12}  {'-'*11}  {'-'*7}")
-    for rate in [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50]:
+    print(f"  {'Location':<30s}  {'Rate':>7}  {'$/mi':>7}  {'vs Gas':>7}  Verdict")
+    print(f"  {'-'*30}  {'-'*7}  {'-'*7}  {'-'*7}  {'-'*7}")
+    for name, rate in CHARGERS.items():
+        if rate is None:
+            print(f"  {name:<30s}     ???                    GO FIND OUT!")
+            continue
         cost_elec = rate / empg
-        verdict = "Charge" if rate < cutoff else "Gas"
-        marker = " <--" if abs(rate - cutoff) < 0.025 else ""
-        print(f"  ${rate:.2f}/kWh     ${cost_elec:.4f}/mi    ${cost_per_mile_gas:.4f}/mi  {verdict}{marker}")
-    print()
+        diff = cost_elec - cost_per_mile_gas
+        if diff < -0.001:
+            verdict = f"Charge — save ${abs(diff):.3f}/mi"
+        elif diff > 0.001:
+            verdict = f"Gas — costs ${diff:.3f}/mi more"
+        else:
+            verdict = "Basically equal"
+        print(f"  {name:<30s}  ${rate:.2f}   ${cost_elec:.4f}  {diff:+.4f}  {verdict}")
+
+    # Show reverse calculation for home charger
+    home_rate = CHARGERS.get(HOME_CHARGER)
+    if home_rate is not None:
+        gas_to_beat = home_rate * mpg / empg
+        print(f"\n  Home charger ({HOME_CHARGER}): ${home_rate:.2f}/kWh")
+        print(f"  Gas would need to drop below ${gas_to_beat:.2f}/gal to beat charging at home")
 
 
 def main():
@@ -98,7 +120,7 @@ def main():
 
     if args.gas_price is not None:
         print(f"  Gas price: ${args.gas_price:.3f}/gal (manual)")
-        print_breakeven(args.gas_price, args.mpg, args.empg)
+        print_results(args.gas_price, args.mpg, args.empg)
         return
 
     # Fetch live prices from all configured stations
@@ -134,7 +156,7 @@ def main():
     # Break-even based on cheapest credit price
     cheapest_credit, _, cheapest_info = results[0]
     print(f"\n  Cheapest gas: ${cheapest_credit:.2f}/gal @ {cheapest_info['name']}")
-    print_breakeven(cheapest_credit, args.mpg, args.empg)
+    print_results(cheapest_credit, args.mpg, args.empg)
 
 
 if __name__ == "__main__":
