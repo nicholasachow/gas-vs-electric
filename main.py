@@ -103,7 +103,7 @@ def main():
 
     # Fetch live prices from all configured stations
     print(f"  Fetching live {args.fuel} prices...\n")
-    any_success = False
+    results = []
     for label, sid in STATIONS.items():
         try:
             info = fetch_price(sid)
@@ -113,22 +113,28 @@ def main():
         if not info or args.fuel not in info["prices"]:
             print(f"  [{label}] no {args.fuel} price available")
             continue
-
-        any_success = True
         price_info = info["prices"][args.fuel]
         credit = price_info["credit"]
+        if credit is None:
+            continue
         cash = price_info.get("cash")
-        cash_str = f" (cash ${cash:.2f})" if cash else ""
-        updated = (price_info.get("updated") or "")[:10]
+        results.append((credit, cash, info))
 
-        print(f"  {info['name']} — {info['address']}, {info['city']}")
-        print(f"  Credit: ${credit:.2f}/gal{cash_str}  (updated {updated})")
-        print_breakeven(credit, args.mpg, args.empg)
-
-    if not any_success:
+    if not results:
         print("  No live prices found. Pass a price manually:")
         print("    uv run python main.py 4.00")
         sys.exit(1)
+
+    # Show all station prices
+    results.sort(key=lambda r: r[0])
+    for credit, cash, info in results:
+        cash_str = f"  cash ${cash:.2f}" if cash else ""
+        print(f"  {info['name']:20s}  credit ${credit:.2f}{cash_str}")
+
+    # Break-even based on cheapest credit price
+    cheapest_credit, _, cheapest_info = results[0]
+    print(f"\n  Cheapest gas: ${cheapest_credit:.2f}/gal @ {cheapest_info['name']}")
+    print_breakeven(cheapest_credit, args.mpg, args.empg)
 
 
 if __name__ == "__main__":
