@@ -1,12 +1,13 @@
 """Generate a static HTML page with current gas vs electric comparison."""
 
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from main import CHARGERS, EMPG, FUEL_TYPE, HOME_CHARGER, MPG, STATIONS, fetch_price
 
 
 def build_html() -> str:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M %Z")
 
     # Fetch gas prices
     gas_results = []
