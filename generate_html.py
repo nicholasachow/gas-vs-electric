@@ -40,7 +40,7 @@ def build_html() -> str:
     charger_rows = ""
     for name, rate in CHARGERS.items():
         if rate is None:
-            charger_rows += f'<tr class="unknown"><td>{name}</td><td>???</td><td>—</td><td>—</td><td>GO FIND OUT!</td></tr>\n'
+            charger_rows += f'<tr class="unknown"><td>{name}</td><td>???</td><td>—</td><td>GO FIND OUT!</td></tr>\n'
             continue
         cost_elec = rate / EMPG
         diff = cost_elec - cost_per_mile_gas
@@ -53,7 +53,7 @@ def build_html() -> str:
         else:
             verdict = "Basically equal"
             cls = "equal"
-        charger_rows += f'<tr class="{cls}"><td>{name}</td><td>${rate:.2f}</td><td>${cost_elec:.4f}</td><td>{diff:+.4f}</td><td>{verdict}</td></tr>\n'
+        charger_rows += f'<tr class="{cls}"><td>{name}</td><td>${rate:.2f}</td><td>${cost_elec:.4f}</td><td>{verdict}</td></tr>\n'
 
     # Home charger info
     home_rate = CHARGERS.get(HOME_CHARGER)
@@ -111,7 +111,7 @@ def build_html() -> str:
 
 <h2>Charging Locations</h2>
 <table>
-<tr><th>Location</th><th>Rate</th><th>$/mi</th><th>vs Gas</th><th>Verdict</th></tr>
+<tr><th>Location</th><th>Rate</th><th>$/mi</th><th>Verdict</th></tr>
 {charger_rows}</table>
 {home_section}
 </body>

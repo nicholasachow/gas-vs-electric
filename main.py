@@ -76,11 +76,11 @@ def print_results(gas_price: float, mpg: float, empg: float):
     print(f"\n  Break-even electricity price: ${cutoff:.3f}/kWh")
     print(f"  Charge if your rate is below ${cutoff:.3f}/kWh\n")
 
-    print(f"  {'Location':<30s}  {'Rate':>7}  {'$/mi':>7}  {'vs Gas':>7}  Verdict")
-    print(f"  {'-'*30}  {'-'*7}  {'-'*7}  {'-'*7}  {'-'*7}")
+    print(f"  {'Location':<30s}  {'Rate':>7}  {'$/mi':>7}  Verdict")
+    print(f"  {'-'*30}  {'-'*7}  {'-'*7}  {'-'*7}")
     for name, rate in CHARGERS.items():
         if rate is None:
-            print(f"  {name:<30s}     ???                    GO FIND OUT!")
+            print(f"  {name:<30s}     ???            GO FIND OUT!")
             continue
         cost_elec = rate / empg
         diff = cost_elec - cost_per_mile_gas
@@ -90,7 +90,7 @@ def print_results(gas_price: float, mpg: float, empg: float):
             verdict = f"Gas — costs ${diff:.3f}/mi more"
         else:
             verdict = "Basically equal"
-        print(f"  {name:<30s}  ${rate:.2f}   ${cost_elec:.4f}  {diff:+.4f}  {verdict}")
+        print(f"  {name:<30s}  ${rate:.2f}   ${cost_elec:.4f}  {verdict}")
 
     # Show reverse calculation for home charger
     home_rate = CHARGERS.get(HOME_CHARGER)
