@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 MPG = 42.6   # gas fuel economy (miles per gallon)
 EMPG = 2.9   # electric efficiency (miles per kWh)
+TANK = 12    # usable fuel tank size (gallons)
 
 STATIONS = {
     "diamond":    4027,   # Diamond Gas & Mart, 789 E Evelyn Ave, Mountain View
@@ -78,6 +79,7 @@ def fetch_price(station_id: int) -> dict | None:
 def print_results(gas_price: float, mpg: float, empg: float):
     cost_per_mile_gas = gas_price / mpg
     cutoff = gas_price * empg / mpg
+    miles_per_tank = TANK * mpg
 
     print(f"\n  Break-even electricity price: ${cutoff:.3f}/kWh")
     print(f"  Charge if your rate is below ${cutoff:.3f}/kWh\n")
@@ -90,10 +92,11 @@ def print_results(gas_price: float, mpg: float, empg: float):
             continue
         cost_elec = rate / empg
         diff = cost_elec - cost_per_mile_gas
+        per_tank = abs(diff) * miles_per_tank
         if diff < -0.001:
-            verdict = f"Charge — save ${abs(diff):.3f}/mi"
+            verdict = f"Charge — save ${abs(diff):.3f}/mi (${per_tank:.2f}/tank)"
         elif diff > 0.001:
-            verdict = f"Gas — costs ${diff:.3f}/mi more"
+            verdict = f"Gas — costs ${diff:.3f}/mi more (${per_tank:.2f}/tank)"
         else:
             verdict = "Basically equal"
         print(f"  {name:<30s}  ${rate:.2f}   ${cost_elec:.4f}  {verdict}")

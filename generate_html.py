@@ -3,7 +3,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from main import CHARGERS, EMPG, FUEL_TYPE, HOME_CHARGER, MPG, STATIONS, fetch_price
+from main import CHARGERS, EMPG, FUEL_TYPE, HOME_CHARGER, MPG, STATIONS, TANK, fetch_price
 
 
 def build_html() -> str:
@@ -38,6 +38,7 @@ def build_html() -> str:
         gas_rows += f"<tr><td>{info['name']}</td><td>{info['address']}, {info['city']}</td><td>${credit:.2f}</td><td>{cash_str}</td></tr>\n"
 
     # Build charger rows
+    miles_per_tank = TANK * MPG
     charger_rows = ""
     for name, rate in CHARGERS.items():
         if rate is None:
@@ -45,11 +46,12 @@ def build_html() -> str:
             continue
         cost_elec = rate / EMPG
         diff = cost_elec - cost_per_mile_gas
+        per_tank = abs(diff) * miles_per_tank
         if diff < -0.001:
-            verdict = f"Charge — save ${abs(diff):.3f}/mi"
+            verdict = f"Charge — save ${abs(diff):.3f}/mi (${per_tank:.2f}/tank)"
             cls = "charge"
         elif diff > 0.001:
-            verdict = f"Gas — costs ${diff:.3f}/mi more"
+            verdict = f"Gas — costs ${diff:.3f}/mi more (${per_tank:.2f}/tank)"
             cls = "gas"
         else:
             verdict = "Basically equal"
