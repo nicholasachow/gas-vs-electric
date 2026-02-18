@@ -6,11 +6,6 @@ from zoneinfo import ZoneInfo
 from main import CHARGERS, EMPG, FUEL_TYPE, HOME_CHARGER, MPG, STATIONS, TANK, fetch_price
 
 
-# Public-facing display names (avoid doxxing)
-CHARGER_DISPLAY_NAMES = {
-    "Downtown Mountain View": "Downtown Mountain View",
-}
-
 
 def build_html() -> str:
     now = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M %Z")
@@ -47,9 +42,8 @@ def build_html() -> str:
     miles_per_tank = TANK * MPG
     charger_rows = ""
     for name, rate in CHARGERS.items():
-        display_name = CHARGER_DISPLAY_NAMES.get(name, name)
         if rate is None:
-            charger_rows += f'<tr class="unknown"><td>{display_name}</td><td>???</td><td>—</td><td>GO FIND OUT!</td></tr>\n'
+            charger_rows += f'<tr class="unknown"><td>{name}</td><td>???</td><td>—</td><td>GO FIND OUT!</td></tr>\n'
             continue
         cost_elec = rate / EMPG
         diff = cost_elec - cost_per_mile_gas
@@ -63,7 +57,7 @@ def build_html() -> str:
         else:
             verdict = "Basically equal"
             cls = "equal"
-        charger_rows += f'<tr class="{cls}"><td>{display_name}</td><td>${rate:.2f}</td><td>${cost_elec:.4f}</td><td>{verdict}</td></tr>\n'
+        charger_rows += f'<tr class="{cls}"><td>{name}</td><td>${rate:.2f}</td><td>${cost_elec:.4f}</td><td>{verdict}</td></tr>\n'
 
     # Home charger info
     home_rate = CHARGERS.get(HOME_CHARGER)
