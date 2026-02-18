@@ -10,11 +10,17 @@ MPG = 42.6   # gas fuel economy (miles per gallon)
 EMPG = 2.9   # electric efficiency (miles per kWh)
 
 STATIONS = {
-    "diamond": 4027,   # Diamond Gas & Mart, 789 E Evelyn Ave, Mountain View
-    "costco":  490,    # Costco, 150 Lawrence Station Rd, Sunnyvale
+    "diamond":    4027,   # Diamond Gas & Mart, 789 E Evelyn Ave, Mountain View
+    "costco":     490,    # Costco, 150 Lawrence Station Rd, Sunnyvale
+    "excelgas":   21794,  # Excel Gas and Market, 996 W Evelyn Ave, Sunnyvale
 }
 
 FUEL_TYPE = "regular_gas"
+
+# Override GasBuddy station names when they differ from the actual sign
+STATION_NAME_OVERRIDES = {
+    21794: "Excel Gas and Market",
+}
 
 # Charging locations: name → ($/kWh, home?)  (None rate = unknown, go find out!)
 HOME_CHARGER = "Downtown Mountain View"
@@ -54,7 +60,7 @@ def fetch_price(station_id: int) -> dict | None:
             return None
         station = data[station_key]
         return {
-            "name": station.get("name"),
+            "name": STATION_NAME_OVERRIDES.get(station_id, station.get("name")),
             "address": station.get("address", {}).get("line1"),
             "city": station.get("address", {}).get("locality"),
             "prices": {
