@@ -1,10 +1,7 @@
 import argparse
-import json
-import re
 import sys
 
 import requests
-from bs4 import BeautifulSoup
 
 MPG = 42.6   # gas fuel economy (miles per gallon)
 EMPG = 2.9   # electric efficiency (miles per kWh)
@@ -32,48 +29,58 @@ CHARGERS = {
 }
 
 
+STATION_QUERY = """
+query GetStation($id: ID!) {
+  station(id: $id) {
+    id name
+    address { line1 locality }
+    prices { fuelProduct cash { price postedTime } credit { price postedTime } }
+  }
+}
+"""
+
+
 def fetch_price(station_id: int) -> dict | None:
-    """Scrape live gas prices from a GasBuddy station page."""
-    url = f"https://www.gasbuddy.com/station/{station_id}"
+    """Fetch live gas prices for a station from GasBuddy's GraphQL API."""
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/120.0.0.0 Safari/537.36"
         ),
+        "Content-Type": "application/json",
+        "apollo-require-preflight": "true",
+        "gbcsrf": "1.ABC",
+        "Origin": "https://www.gasbuddy.com",
+        "Referer": f"https://www.gasbuddy.com/station/{station_id}",
     }
-    resp = requests.get(url, headers=headers, timeout=15)
+    payload = {
+        "operationName": "GetStation",
+        "variables": {"id": str(station_id)},
+        "query": STATION_QUERY,
+    }
+    resp = requests.post(
+        "https://www.gasbuddy.com/graphql", json=payload, headers=headers, timeout=15
+    )
     resp.raise_for_status()
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-    for script in soup.find_all("script"):
-        text = script.string or ""
-        if "__APOLLO_STATE__" not in text:
-            continue
-        match = re.search(
-            r"window\.__APOLLO_STATE__\s*=\s*(\{.*?\});", text, re.DOTALL
-        )
-        if not match:
-            continue
-        data = json.loads(match.group(1))
-        station_key = f"Station:{station_id}"
-        if station_key not in data:
-            return None
-        station = data[station_key]
-        return {
-            "name": STATION_NAME_OVERRIDES.get(station_id, station.get("name")),
-            "address": station.get("address", {}).get("line1"),
-            "city": station.get("address", {}).get("locality"),
-            "prices": {
-                p["fuelProduct"]: {
-                    "credit": (p.get("credit") or {}).get("price"),
-                    "cash": (p.get("cash") or {}).get("price"),
-                    "updated": (p.get("credit") or {}).get("postedTime"),
-                }
-                for p in station.get("prices", [])
-            },
-        }
-    return None
+    station = (resp.json().get("data") or {}).get("station")
+    if not station:
+        return None
+    address = station.get("address") or {}
+    return {
+        "name": STATION_NAME_OVERRIDES.get(station_id, station.get("name")),
+        "address": address.get("line1"),
+        "city": address.get("locality"),
+        "prices": {
+            p["fuelProduct"]: {
+                "credit": (p.get("credit") or {}).get("price"),
+                "cash": (p.get("cash") or {}).get("price"),
+                "updated": (p.get("credit") or {}).get("postedTime"),
+            }
+            for p in station.get("prices", [])
+        },
+    }
 
 
 def print_results(gas_price: float, mpg: float, empg: float):
